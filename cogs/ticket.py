@@ -1,3 +1,4 @@
+import os
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -8,15 +9,18 @@ class TicketView(discord.ui.View):
 
     @discord.ui.button(label='🛒 Comprar', style=discord.ButtonStyle.gray, custom_id='buy_ticket')
     async def buy_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("🛒 Você selecionou **Comprar**. Um atendente irá te ajudar em breve!", ephemeral=True)
+        manager = TicketManager(interaction, "Compra")
+        await manager.create_ticket_channel()
 
     @discord.ui.button(label='🛠️ Suporte', style=discord.ButtonStyle.gray, custom_id='support_ticket')
     async def support_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("🛠️ Você selecionou **Suporte**. Aguarde o atendimento.", ephemeral=True)
+        manager = TicketManager(interaction, "Suporte")
+        await manager.create_ticket_channel()
 
     @discord.ui.button(label='🎥 Media Creator', style=discord.ButtonStyle.gray, custom_id='mc_ticket')
     async def mc_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("🎥 Você selecionou **Media Creator**. Em breve entraremos em contato!", ephemeral=True)
+        manager = TicketManager(interaction, "Media Creator")
+        await manager.create_ticket_channel()
 
 
 class TicketCog(commands.Cog):
@@ -38,6 +42,52 @@ class TicketCog(commands.Cog):
         view = TicketView()
 
         await interaction.response.send_message(embed=embed, ephemeral=False, view=view)
+
+class TicketManager:
+    def __init__(self, interaction: discord.Interaction, ticket_type: str):
+        self.interaction = interaction
+        self.guild = interaction.guild
+        self.user = interaction.user
+        self.ticket_type = ticket_type
+
+    async def create_ticket_channel(self):
+        category = discord.utils.get(self.guild.categories, name=f"🎫 {self.ticket_type}")
+        if category is None:
+            category = await self.guild.create_category(f"🎫 {self.ticket_type}")
+
+        admin_id = os.getenv("ADMIN_ROLE_ID")
+        support_id = os.getenv("SUPPORT_ROLE_ID")
+
+        admin = self.guild.get_role(int(admin_id)) if admin_id else None
+        support = self.guild.get_role(int(support_id)) if support_id else None
+
+        overwrites = {
+            self.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            self.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            admin: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_messages=True),
+            support: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_messages=True)
+        }
+
+        channel_name = f"{self.ticket_type}-{self.user.name}".replace(" ", "-").lower()
+
+        existing = discord.utils.get(category.text_channels, name=channel_name)
+
+        if existing:
+            await self.interaction.response.send_message(f"⚠️ Você já possui um ticket aberto: {existing.mention}", ephemeral=True)
+            return
+
+        channel = await self.guild.create_text_channel(
+            name=channel_name,
+            category=category,
+            overwrites=overwrites,
+            topic=f"Ticket de {self.user.display_name} | Tipo: {self.ticket_type}"
+        )
+
+        await self.interaction.response.send_message(
+            f"✅ Seu ticket foi criado: {channel.mention}", ephemeral=True
+        )
+
+        await channel.send(f"{self.user.mention}, bem-vindo ao seu ticket de **{self.ticket_type.title()}**! Um atendente falará com você em breve.")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(TicketCog(bot))
