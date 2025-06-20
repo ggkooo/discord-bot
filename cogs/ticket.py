@@ -1,4 +1,6 @@
 import asyncio
+from datetime import datetime
+from pytz import timezone
 import os
 import discord
 from discord import app_commands
@@ -74,6 +76,7 @@ class TicketManager:
         self.guild = interaction.guild
         self.user = interaction.user
         self.ticket_type = ticket_type
+        self.creation_time = datetime.now(timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S')
 
     async def create_ticket_channel(self):
         category = discord.utils.get(self.guild.categories, name=f"🎫 {self.ticket_type}")
@@ -105,7 +108,7 @@ class TicketManager:
             name=channel_name,
             category=category,
             overwrites=overwrites,
-            topic=f"Ticket de {self.user.display_name} | Tipo: {self.ticket_type}"
+            topic=f"Ticket de {self.user.display_name} | User ID: {self.user.id} | Criado em: {self.creation_time} | Tipo: {self.ticket_type}"
         )
 
         await self.interaction.response.send_message(
