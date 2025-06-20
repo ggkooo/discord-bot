@@ -8,6 +8,7 @@ class Admin(commands.Cog):
         super().__init__()
 
     @app_commands.command(name='clear', description='A clear command')
+    @app_commands.checks.has_permissions(administrator=True)
     async def clear(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         deleted = await interaction.channel.purge()
