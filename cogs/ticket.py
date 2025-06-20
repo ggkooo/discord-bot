@@ -47,7 +47,40 @@ class TicketViewOpened(discord.ui.View):
 
     @discord.ui.button(label='🕐 Lembrar', style=discord.ButtonStyle.gray, custom_id='remember_ticket')
     async def reopen_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Botão de lembrar usuario pressionado.", ephemeral=True)
+        # O autor do ticket é o primeiro membro com permissão de enviar mensagens (exceto bot e staff)
+        ticket_owner = None
+        for member, perms in interaction.channel.overwrites.items():
+            if isinstance(member, discord.Member) and perms.send_messages and not member.bot:
+                ticket_owner = member
+                break
+        # fallback: se não achar, tenta pegar o autor da última mensagem do canal
+        if not ticket_owner:
+            async for msg in interaction.channel.history(limit=10):
+                if not msg.author.bot:
+                    ticket_owner = msg.author
+                    break
+
+        if not ticket_owner:
+            await interaction.response.send_message("Não foi possível identificar o usuário do ticket.", ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title="Lembrete de Ticket Aberto",
+            description=(
+                f"Olá {ticket_owner.mention},\n\n"
+                f"Você possui um ticket aberto no servidor **{interaction.guild.name}**.\n"
+                f"Por favor, responda ou aguarde o atendimento da equipe.\n\n"
+                f"Canal do ticket: {interaction.channel.mention}"
+            ),
+            color=discord.Color.purple()
+        )
+        embed.set_footer(text='© 2025 | Spectre Store', icon_url='https://media.discordapp.net/attachments/1354984897470533812/1354991710886953042/a_f181ebc88e6907c82c955e6c89cc14d2.gif?ex=6854119e&is=6852c01e&hm=2f57b5451965e6f64719623eb5da67f4738753091367691a68c84396aadf1993&=')
+
+        try:
+            await ticket_owner.send(embed=embed)
+            await interaction.response.send_message("Lembrete enviado no privado do usuário!", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message("Não foi possível enviar DM para o usuário.", ephemeral=True)
 
 class TicketCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
