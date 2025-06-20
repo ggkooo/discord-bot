@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-class Admin(commands.Cog):
+class AdminCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         super().__init__()
@@ -15,4 +15,4 @@ class Admin(commands.Cog):
         await interaction.followup.send(f"{len(deleted)} mensagens foram apagadas.", ephemeral=True)
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Admin(bot))
+    await bot.add_cog(AdminCog(bot))

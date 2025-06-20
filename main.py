@@ -1,5 +1,5 @@
 import os
-from cogs.ticket import TicketView
+from cogs.ticket import TicketView, TicketViewOpened
 import discord
 from discord.ext import commands
 
@@ -18,6 +18,7 @@ class ModifiedBot(commands.Bot):
 
     async def setup_hook(self):
         self.add_view(TicketView())
+        self.add_view(TicketViewOpened())
         await self.load_cogs()
         await self.tree.sync()
 
