@@ -53,7 +53,7 @@ class AddMessageCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="addmessage", description="Adiciona uma nova mensagem ao JSON")
+    @app_commands.command(name="add_message", description="Adding a new message to the auto messages list")
     @app_commands.checks.has_permissions(administrator=True)
     async def add_message(self, interaction: discord.Interaction):
         await interaction.response.send_modal(AddMessageModal(interaction))

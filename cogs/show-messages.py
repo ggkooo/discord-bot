@@ -26,6 +26,7 @@ class MessageSelect(discord.ui.Select):
         if data.get("image"):
             embed.set_image(url=data["image"])
         embed.add_field(name="Preço", value=f"```{data.get('price', '0')}```", inline=False)
+        embed.set_footer(text='© 2025 | Spectre Store', icon_url='https://media.discordapp.net/attachments/1354984897470533812/1354991710886953042/a_f181ebc88e6907c82c955e6c89cc14d2.gif?ex=6854119e&is=6852c01e&hm=2f57b5451965e6f64719623eb5da67f4738753091367691a68c84396aadf1993&=')
 
         view = MessageButtonsView(data)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -122,7 +123,7 @@ class ShowMessagesCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="showmessages", description="Exibe as mensagens salvas no JSON")
+    @app_commands.command(name="show_messages", description="Show saved messages")
     @app_commands.checks.has_permissions(administrator=True)
     async def show_messages(self, interaction: discord.Interaction):
         if not os.path.exists(AUTO_MSGS_FILE):
