@@ -1,3 +1,4 @@
+import asyncio
 import os
 import discord
 from discord import app_commands
@@ -28,7 +29,19 @@ class TicketViewOpened(discord.ui.View):
 
     @discord.ui.button(label='❌ Fechar', style=discord.ButtonStyle.gray, custom_id='close_ticket')
     async def close_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Botão de fechar ticket pressionado.", ephemeral=True)
+        transcript_cog = interaction.client.get_cog("TranscriptCog")
+        if transcript_cog:
+            await transcript_cog.save_transcript(interaction.channel, interaction)
+            msg = await interaction.response.send_message("Transcript salvo. Seu ticket será deletado em 5 segundos.", ephemeral=True)
+            # Aguarda o envio da mensagem e edita a cada segundo
+            followup = await interaction.original_response()
+            for i in range(4, 0, -1):
+                await asyncio.sleep(1)
+                await followup.edit(content=f"Transcript salvo. Seu ticket será deletado em {i} segundos.")
+            await asyncio.sleep(1)
+            await interaction.channel.delete()
+        else:
+            await interaction.response.send_message("Erro ao salvar transcript: cog não encontrada.", ephemeral=True)
 
     @discord.ui.button(label='🕐 Lembrar', style=discord.ButtonStyle.gray, custom_id='remember_ticket')
     async def reopen_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
