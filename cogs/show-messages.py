@@ -9,7 +9,7 @@ AUTO_MSGS_FILE = "auto_messages.json"
 class MessageSelect(discord.ui.Select):
     def __init__(self, messages):
         options = [
-            discord.SelectOption(label=msg.get("titulo", f"Mensagem {i+1}"), value=str(i))
+            discord.SelectOption(label=msg.get("title", f"Mensagem {i+1}"), value=str(i))
             for i, msg in enumerate(messages)
         ]
         super().__init__(placeholder="Escolha uma mensagem...", min_values=1, max_values=1, options=options)
@@ -19,12 +19,13 @@ class MessageSelect(discord.ui.Select):
         idx = int(self.values[0])
         data = self.messages[idx]
         embed = discord.Embed(
-            title=data.get("titulo", "Sem título"),
-            description=data.get("descricao", "Sem descrição"),
+            title=data.get("title", "Sem título"),
+            description=data.get("description", "Sem descrição"),
             color=discord.Color.purple()
         )
-        if data.get("imagem"):
-            embed.set_image(url=data["imagem"])
+        if data.get("image"):
+            embed.set_image(url=data["image"])
+        embed.add_field(name="Preço", value=f"```{data.get('price', '0')}```", inline=False)
 
         view = MessageButtonsView(data)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
@@ -42,24 +43,34 @@ class MessageButtonsView(discord.ui.View):
         self.add_item(DeleteButton(data["id"]))
 
 class EditMessageModal(discord.ui.Modal, title="Editar Mensagem"):
-    def __init__(self, msg_id, titulo, descricao, imagem):
+    def __init__(self, msg_id, title, description, price, image, channel_id):
         super().__init__()
         self.msg_id = msg_id
-        self.titulo = discord.ui.TextInput(label="Título", default=titulo, max_length=100)
-        self.descricao = discord.ui.TextInput(label="Descrição", default=descricao, style=discord.TextStyle.paragraph)
-        self.imagem = discord.ui.TextInput(label="URL da Imagem (opcional)", default=imagem, required=False)
-        self.add_item(self.titulo)
-        self.add_item(self.descricao)
-        self.add_item(self.imagem)
+        self.input_title = discord.ui.TextInput(label="Título", default=title, max_length=100)
+        self.input_description = discord.ui.TextInput(label="Descrição", default=description, style=discord.TextStyle.paragraph)
+        self.input_price = discord.ui.TextInput(label="Preço",default=price , required=True, style=discord.TextStyle.paragraph)
+        self.input_image = discord.ui.TextInput(label="URL da Imagem (opcional)", default=image, required=False)
+        self.input_channel_id = discord.ui.TextInput(
+            label="ID do Canal para enviar a mensagem",
+            default=str(channel_id) if channel_id else "",
+            required=True
+        )
+        self.add_item(self.input_title)
+        self.add_item(self.input_description)
+        self.add_item(self.input_price)
+        self.add_item(self.input_image)
+        self.add_item(self.input_channel_id)
 
     async def on_submit(self, interaction: discord.Interaction):
         with open(AUTO_MSGS_FILE, "r", encoding="utf-8") as f:
             messages = json.load(f)
         for msg in messages:
             if msg.get("id") == self.msg_id:
-                msg["titulo"] = self.titulo.value
-                msg["descricao"] = self.descricao.value
-                msg["imagem"] = self.imagem.value
+                msg["title"] = self.input_title.value
+                msg["description"] = self.input_description.value
+                msg["price"] = self.input_price.value
+                msg["image"] = self.input_image.value
+                msg["channel_id"] = int(self.input_channel_id.value)
                 break
         with open(AUTO_MSGS_FILE, "w", encoding="utf-8") as f:
             json.dump(messages, f, ensure_ascii=False, indent=4)
@@ -73,16 +84,25 @@ class EditButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         with open(AUTO_MSGS_FILE, "r", encoding="utf-8") as f:
             messages = json.load(f)
+
         msg = next((m for m in messages if m.get("id") == self.msg_id), None)
+
         if not msg:
             await interaction.response.send_message("Mensagem não encontrada.", ephemeral=True)
             return
+        
+        channel_id = msg.get("channel_id")
+        channel_id_str = str(channel_id) if channel_id and str(channel_id).isdigit() else ""
+        
         modal = EditMessageModal(
             msg_id=self.msg_id,
-            titulo=msg.get("titulo", ""),
-            descricao=msg.get("descricao", ""),
-            imagem=msg.get("imagem", "")
+            title=msg.get("title", ""),
+            description=msg.get("description", ""),
+            price=msg.get("price", ""),
+            image=msg.get("image", ""),
+            channel_id=channel_id_str
         )
+        
         await interaction.response.send_modal(modal)
 
 class DeleteButton(discord.ui.Button):
