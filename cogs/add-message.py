@@ -22,15 +22,29 @@ def save_auto_message(data):
         json.dump(messages, f, ensure_ascii=False, indent=4)
 
 class AddMessageModal(discord.ui.Modal, title="Adicionar Mensagem"):
-    titulo = discord.ui.TextInput(label="Título", max_length=100)
-    descricao = discord.ui.TextInput(label="Descrição", style=discord.TextStyle.paragraph)
-    imagem = discord.ui.TextInput(label="URL da Imagem (opcional)", required=False)
+    def __init__(self, interaction: discord.Interaction):
+        super().__init__()
+        self.interaction = interaction
+
+        self.input_title = discord.ui.TextInput(label="Título", max_length=100)
+        self.input_description = discord.ui.TextInput(label="Descrição", style=discord.TextStyle.paragraph)
+        self.input_price = discord.ui.TextInput(label="Preço", required=True, style=discord.TextStyle.paragraph)
+        self.input_image = discord.ui.TextInput(label="URL da Imagem", required=True)
+        self.input_channel_id = discord.ui.TextInput(label="ID do Canal para enviar a mensagem", required=True)
+
+        self.add_item(self.input_title)
+        self.add_item(self.input_description)
+        self.add_item(self.input_price)
+        self.add_item(self.input_image)
+        self.add_item(self.input_channel_id)
 
     async def on_submit(self, interaction: discord.Interaction):
         data = {
-            "titulo": self.titulo.value,
-            "descricao": self.descricao.value,
-            "imagem": self.imagem.value
+            "title": self.input_title.value,
+            "description": self.input_description.value,
+            "price": self.input_price.value,
+            "image": self.input_image.value,
+            "channel_id": int(self.input_channel_id.value)
         }
         save_auto_message(data)
         await interaction.response.send_message("Mensagem salva no JSON!", ephemeral=True)
@@ -42,7 +56,7 @@ class AddMessageCog(commands.Cog):
     @app_commands.command(name="addmessage", description="Adiciona uma nova mensagem ao JSON")
     @app_commands.checks.has_permissions(administrator=True)
     async def add_message(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(AddMessageModal())
+        await interaction.response.send_modal(AddMessageModal(interaction))
 
 async def setup(bot):
     await bot.add_cog(AddMessageCog(bot))
