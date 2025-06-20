@@ -1,3 +1,5 @@
+from datetime import datetime
+from pytz import timezone
 import discord
 from discord.ext import commands
 import os
@@ -5,6 +7,27 @@ import uuid
 import aiohttp
 import zipfile
 import shutil
+
+class TranscriptView(discord.ui.View):
+    def __init__(self, url):
+        super().__init__()
+        self.add_item(discord.ui.Button(label="Baixar Transcript", url=url))
+
+def get_ticket_creation_date(channel):
+    if channel.topic:
+        parts = channel.topic.split('|')
+        if len(parts) > 2 and 'Criado em:' in parts[2]:
+            return parts[2].split('Criado em:')[1].strip()
+    return None
+
+def get_ticket_owner(channel):
+    if channel.topic:
+        parts = channel.topic.split('|')
+        if len(parts) > 1 and 'User ID:' in parts[1]:
+            user_id_str = parts[1].split('User ID:')[1].strip()
+            if user_id_str.isdigit():
+                return int(user_id_str)
+    return None
 
 class TranscriptCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -47,12 +70,38 @@ class TranscriptCog(commands.Cog):
         shutil.make_archive(folder_path, 'zip', folder_path)
 
         channel_id = os.getenv("TRANSCRIPT_CHANNEL_ID")
-        transcript_channel = discord.utils.get(interaction.guild.text_channels, id=int(channel_id))        
+        transcript_channel = discord.utils.get(interaction.guild.text_channels, id=int(channel_id))
+
+        channel_id = os.getenv("ZIP_CHANNEL_ID")
+        zip_channel = discord.utils.get(interaction.guild.text_channels, id=int(channel_id))
+
+        sent_message = await zip_channel.send(
+            file=discord.File(zip_path)
+        )
+
+        attachment_url = sent_message.attachments[0].url
+
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="Baixar Transcript (.zip)", url=attachment_url))
         
         if transcript_channel:
+            creator_id = get_ticket_owner(interaction.channel)
+            creator = interaction.guild.get_member(creator_id)
+
+            embed = discord.Embed(
+                title=f"Ticket Fechado",
+                description=f'✅ **Aberto por:** {creator.mention if creator else "Unknown"}\n'
+                        f'⏰ **Data:** {get_ticket_creation_date(interaction.channel)}\n\n'
+                        f'❌ **Fechado por:** {interaction.user.mention}\n'
+                        f'⏰ **Data:** {datetime.now(timezone("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")}\n\n',
+                color=discord.Color.purple()
+            )
+
+            embed.set_footer(text='© 2025 | Spectre Store', icon_url='https://media.discordapp.net/attachments/1354984897470533812/1354991710886953042/a_f181ebc88e6907c82c955e6c89cc14d2.gif?ex=6854119e&is=6852c01e&hm=2f57b5451965e6f64719623eb5da67f4738753091367691a68c84396aadf1993&=')
+
             await transcript_channel.send(
-                #content=f"Transcript do ticket #{channel.name}:",
-                file=discord.File(zip_path)
+                embed=embed,
+                view=view
             )
 
         shutil.rmtree(folder_path)
