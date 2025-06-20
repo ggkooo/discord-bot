@@ -22,6 +22,17 @@ class TicketView(discord.ui.View):
         manager = TicketManager(interaction, "Media Creator")
         await manager.create_ticket_channel()
 
+class TicketViewOpened(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='❌ Fechar', style=discord.ButtonStyle.gray, custom_id='close_ticket')
+    async def close_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Botão de fechar ticket pressionado.", ephemeral=True)
+
+    @discord.ui.button(label='🕐 Lembrar', style=discord.ButtonStyle.gray, custom_id='remember_ticket')
+    async def reopen_ticket_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Botão de lembrar usuario pressionado.", ephemeral=True)
 
 class TicketCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -29,6 +40,7 @@ class TicketCog(commands.Cog):
         super().__init__()
 
     @app_commands.command(name='ticket', description='Create ticket embed')
+    @app_commands.checks.has_permissions(administrator=True)
     async def ticket(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title='🎫 Ticket | Spectre Store',
@@ -87,7 +99,17 @@ class TicketManager:
             f"✅ Seu ticket foi criado: {channel.mention}", ephemeral=True
         )
 
-        await channel.send(f"{self.user.mention}, bem-vindo ao seu ticket de **{self.ticket_type.title()}**! Um atendente falará com você em breve.")
+        embed = discord.Embed(
+            title=f"🎫 Ticket | Spectre Store",
+            description=f"Olá {self.user.mention}, seja bem-vindo ao seu ticket de **{self.ticket_type.lower()}**! Nossa equipe irá lhe atender em alguns instantes.",
+            color=discord.Color.purple()
+        )
+
+        embed.set_footer(text='© 2025 | Spectre Store', icon_url='https://media.discordapp.net/attachments/1354984897470533812/1354991710886953042/a_f181ebc88e6907c82c955e6c89cc14d2.gif?ex=6854119e&is=6852c01e&hm=2f57b5451965e6f64719623eb5da67f4738753091367691a68c84396aadf1993&=')
+
+        view = TicketViewOpened()
+
+        await channel.send(f"{admin.mention} {support.mention} {self.user.mention}", embed=embed, view=view)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(TicketCog(bot))
