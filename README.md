@@ -129,6 +129,79 @@ Below are example images and IDs for your `.env` file.
 
 ---
 
+# 📢 Automatic Messages Guide
+
+Your bot allows you to manage automatic (embed) messages for specific Discord channels.  
+See below how to **add**, **edit**, **delete**, and **send** these messages.
+
+---
+
+## ➕ How to Add a Message
+
+1. Use the slash command:
+   ```
+   /add_message
+   ```
+2. Fill out the modal with:
+   - **Title:** The message title.
+   - **Description:** The main text of the message.
+   - **Price:** The value to display.
+   - **Image URL:** A link to an image for the embed.
+   - **Channel ID:** The ID of the channel where the message will be sent.
+
+3. Click **Submit**.  
+The message will be saved in the `auto_messages.json` file.
+
+---
+
+## ✏️ How to Edit a Message
+
+1. Use the command:
+   ```
+   /show_messages
+   ```
+2. Select the message you want to edit from the list.
+3. Click the **Edit** button.
+4. A modal will open. Change the desired fields and submit.
+5. The message will be updated in the `auto_messages.json` file.
+
+---
+
+## 🗑️ How to Delete a Message
+
+1. Use the command:
+   ```
+   /show_messages
+   ```
+2. Select the message you want to delete.
+3. Click the **Delete** button.
+4. Confirm the deletion.  
+The message will be removed from the `auto_messages.json` file.
+
+---
+
+## 🚀 How to Send All Automatic Messages
+
+1. Use the command:
+   ```
+   /send_messages
+   ```
+2. Click the **Send All Messages** button.
+3. Enter the time (in seconds) between each message in the modal.
+4. The bot will send (and update) all automatic messages in the configured channels.
+
+- To **stop the looped sending**, click the **Stop All Sending** button.
+
+---
+
+## ℹ️ Notes
+
+- Only administrators can use these commands.
+- All commands are slash commands in Discord.
+- The `auto_messages.json` file stores all automatic messages.
+
+---
+
 ## ❓ FAQ
 
 - **Q:** My bot doesn't start or gives "Improper token has been passed."  
